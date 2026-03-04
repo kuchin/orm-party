@@ -5,12 +5,12 @@ import Layout from "../layouts/Layout.astro";
 import CategoryPage from "../components/CategoryPage.astro";
 
 export function getStaticPaths() {
-  return categories.map((cat, i) => ({
+  return categories.slice(1).map((cat, i) => ({
     params: { category: cat.slug },
     props: {
       category: cat,
-      prevCategory: i > 0 ? categories[i - 1] : undefined,
-      nextCategory: categories[(i + 1) % categories.length],
+      prevCategory: categories[i],
+      nextCategory: categories[i + 2] || categories[0],
     },
   }));
 }

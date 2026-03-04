@@ -141,3 +141,7 @@ export const categories: Category[] = [
     ],
   },
 ];
+
+export function categoryUrl(slug: string): string {
+  return slug === categories[0].slug ? "/" : `/${slug}`;
+}

@@ -1,5 +1,5 @@
 ---
-import { categories } from "../data/categories";
+import { categories, categoryUrl } from "../data/categories";
 
 interface Props {
   currentSlug?: string;
@@ -25,7 +25,7 @@ const { currentSlug } = Astro.props;
         categories.map((cat) => (
           <li>
             <a
-              href={`/${cat.slug}`}
+              href={categoryUrl(cat.slug)}
               class:list={[
                 "block py-1.5 px-3 rounded text-sm",
                 cat.slug === currentSlug

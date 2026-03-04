@@ -1,5 +1,5 @@
 ---
-import type { Category } from "../data/categories";
+import { categoryUrl, type Category } from "../data/categories";
 import { orms } from "../data/orms";
 import ScenarioSection from "./ScenarioSection.astro";
 import OrmSelector from "./OrmSelector.astro";
@@ -41,7 +41,7 @@ for (const s of snippets) {
     <div class="flex items-center gap-2">
       {prevCategory && (
         <a
-          href={`/${prevCategory.slug}`}
+          href={categoryUrl(prevCategory.slug)}
           class="flex items-center justify-center w-8 h-8 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
           aria-label={`Previous: ${prevCategory.title}`}
           title={prevCategory.title}
@@ -52,7 +52,7 @@ for (const s of snippets) {
         </a>
       )}
       <a
-        href={`/${nextCategory.slug}`}
+        href={categoryUrl(nextCategory.slug)}
         class="flex items-center justify-center w-8 h-8 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
         aria-label={`Next: ${nextCategory.title}`}
         title={nextCategory.title}
@@ -82,7 +82,7 @@ for (const s of snippets) {
   <div id="bottom-nav" class="mt-20 pb-12 flex items-center justify-center gap-2">
     {prevCategory && (
       <a
-        href={`/${prevCategory.slug}`}
+        href={categoryUrl(prevCategory.slug)}
         class="flex items-center justify-center w-8 h-8 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
         aria-label={`Previous: ${prevCategory.title}`}
         title={prevCategory.title}
@@ -93,7 +93,7 @@ for (const s of snippets) {
       </a>
     )}
     <a
-      href={`/${nextCategory.slug}`}
+      href={categoryUrl(nextCategory.slug)}
       class="flex items-center justify-center w-8 h-8 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
       aria-label={`Next: ${nextCategory.title}`}
       title={nextCategory.title}
