@@ -1,0 +1,349 @@
+---
+import type { OrmDef } from "../data/orms";
+
+interface Props {
+    orms: OrmDef[];
+}
+
+const { orms } = Astro.props;
+const ormLangMap = Object.fromEntries(orms.map((o) => [o.id, o.language]));
+---
+
+<div
+    class="flex items-center px-6 py-2 sticky top-0 z-20 w-full backdrop-blur bg-gray-900/80 border-b border-gray-700 whitespace-nowrap gap-8"
+    id="orm-selector"
+    data-orm-langs={JSON.stringify(ormLangMap)}
+>
+    <button
+        id="sidebar-toggle"
+        class="lg:hidden text-gray-400 hover:text-white transition-colors shrink-0"
+        aria-label="Toggle sidebar"
+    >
+        <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+        >
+            <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+    <div class="flex items-center gap-1.5 shrink-0">
+        <button
+            class="lang-filter flex items-center rounded border p-1.5 bg-gray-900 hover:bg-gray-800 transition-all cursor-pointer border-blue-500 text-white"
+            data-lang="python"
+            title="Python"
+        >
+            <img src="/lang/python.svg" alt="Python" class="w-4 h-4" />
+        </button>
+        <button
+            class="lang-filter flex items-center rounded border p-1.5 bg-gray-900 hover:bg-gray-800 transition-all cursor-pointer border-blue-500 text-white"
+            data-lang="typescript"
+            title="TypeScript"
+        >
+            <img src="/lang/typescript.svg" alt="TypeScript" class="w-4 h-4" />
+        </button>
+    </div>
+    <div class="flex items-center gap-2 overflow-x-auto min-w-0 ml-auto">
+        {
+            orms.map((orm) => (
+                <button
+                    class="orm-toggle text-sm flex-shrink-0 rounded border px-3 py-1 bg-gray-900 hover:bg-gray-800 transition-all flex items-center gap-1.5 border-gray-700 text-gray-500 opacity-60 cursor-pointer"
+                    data-orm-id={orm.id}
+                    data-orm-lang={orm.language}
+                >
+                    <img
+                        src={`/orm/${orm.id}.svg`}
+                        alt=""
+                        class="w-4 h-4 flex-shrink-0"
+                    />
+                    <span class="flex-shrink-0">{orm.name}</span>
+                </button>
+            ))
+        }
+    </div>
+</div>
+
+<script>
+    // Ordered selection: tracks which ORMs are selected and in what order
+    let selectionOrder: string[] = [];
+    // Original DOM order of ORM IDs (set once on setup)
+    let originalOrder: string[] = [];
+
+    function getOrmLangMap(): Record<string, string> {
+        const el = document.getElementById("orm-selector");
+        return JSON.parse(el?.dataset.ormLangs || "{}");
+    }
+
+    function getActiveLangs(): Set<string> {
+        const active = new Set<string>();
+        document
+            .querySelectorAll<HTMLButtonElement>(".lang-filter")
+            .forEach((btn) => {
+                if (btn.classList.contains("border-blue-500"))
+                    active.add(btn.dataset.lang!);
+            });
+        return active;
+    }
+
+    function getVisibleOrms(): Set<string> {
+        const langMap = getOrmLangMap();
+        const activeLangs = getActiveLangs();
+        return new Set(
+            Object.entries(langMap)
+                .filter(([, lang]) => lang === "sql" || activeLangs.has(lang))
+                .map(([id]) => id),
+        );
+    }
+
+    function styleBtn(btn: HTMLButtonElement, isSelected: boolean) {
+        btn.classList.toggle("border-blue-500", isSelected);
+        btn.classList.toggle("text-white", isSelected);
+        btn.classList.toggle("border-gray-700", !isSelected);
+        btn.classList.toggle("text-gray-500", !isSelected);
+        btn.classList.toggle("opacity-60", !isSelected);
+    }
+
+    function reorderButtons() {
+        const container =
+            document.querySelector<HTMLElement>(".orm-toggle")?.parentElement;
+        if (!container) return;
+
+        const selected = new Set(selectionOrder);
+        // Selected first (in selection order), then unselected (in original order)
+        const sorted = [
+            ...selectionOrder,
+            ...originalOrder.filter((id) => !selected.has(id)),
+        ];
+
+        for (const id of sorted) {
+            const btn = container.querySelector<HTMLButtonElement>(
+                `.orm-toggle[data-orm-id="${id}"]`,
+            );
+            if (btn) container.appendChild(btn);
+        }
+    }
+
+    function reorderSnippets() {
+        document
+            .querySelectorAll<HTMLElement>(".snippet-grid")
+            .forEach((grid) => {
+                const selected = new Set(selectionOrder);
+                const sorted = [
+                    ...selectionOrder,
+                    ...originalOrder.filter((id) => !selected.has(id)),
+                ];
+                for (const id of sorted) {
+                    const el = grid.querySelector<HTMLElement>(
+                        `[data-orm="${id}"]`,
+                    );
+                    if (el) grid.appendChild(el);
+                }
+            });
+    }
+
+    function applyState() {
+        const visible = getVisibleOrms();
+        const selected = new Set(selectionOrder);
+
+        // Show/hide and style ORM buttons
+        document
+            .querySelectorAll<HTMLButtonElement>(".orm-toggle")
+            .forEach((btn) => {
+                const id = btn.dataset.ormId!;
+                btn.style.display = visible.has(id) ? "" : "none";
+                styleBtn(btn, selected.has(id));
+            });
+
+        // Reorder buttons and snippets: selected first
+        reorderButtons();
+        reorderSnippets();
+
+        // Snippet visibility
+        const activeOrms = new Set(
+            selectionOrder.filter((id) => visible.has(id)),
+        );
+        document.querySelectorAll<HTMLElement>("[data-orm]").forEach((el) => {
+            el.style.display = activeOrms.has(el.dataset.orm!) ? "" : "none";
+        });
+
+        // Hide empty scenario sections
+        document
+            .querySelectorAll<HTMLElement>("section[id]")
+            .forEach((section) => {
+                const hasVisible = Array.from(
+                    section.querySelectorAll<HTMLElement>("[data-orm]"),
+                ).some((el) => el.style.display !== "none");
+                section.style.display = hasVisible ? "" : "none";
+            });
+
+        const noSelection = activeOrms.size === 0;
+        const emptyState = document.getElementById("empty-state");
+        if (emptyState) emptyState.style.display = noSelection ? "" : "none";
+        const categoryHeader = document.getElementById("category-header");
+        if (categoryHeader)
+            categoryHeader.style.display = noSelection ? "none" : "";
+        const bottomNav = document.getElementById("bottom-nav");
+        if (bottomNav) bottomNav.style.display = noSelection ? "none" : "";
+
+        // Adjust sidebar breakpoint: show earlier when fewer ORMs selected
+        // Classes: xl:sticky xl:translate-x-0 xl:hidden (ensure Tailwind compiles them)
+        const wide = selectionOrder.length < 2;
+        const sidebar = document.getElementById("sidebar");
+        const sidebarToggle = document.getElementById("sidebar-toggle");
+        if (sidebar && sidebarToggle) {
+            if (noSelection) {
+                sidebar.style.display = "none";
+                sidebarToggle.style.display = "none";
+            } else {
+                sidebar.style.display = "";
+                sidebarToggle.style.display = "";
+                const from = wide ? "xl" : "lg";
+                const to = wide ? "lg" : "xl";
+                sidebar.classList.replace(`${from}:sticky`, `${to}:sticky`);
+                sidebar.classList.replace(
+                    `${from}:translate-x-0`,
+                    `${to}:translate-x-0`,
+                );
+                sidebarToggle.classList.replace(
+                    `${from}:hidden`,
+                    `${to}:hidden`,
+                );
+            }
+        }
+
+        // Single column grid when <2 ORMs selected
+        document
+            .querySelectorAll<HTMLElement>(".snippet-grid")
+            .forEach((grid) => {
+                grid.classList.toggle("lg:grid-cols-2", !wide);
+            });
+
+        // Persist
+        const url = new URL(window.location.href);
+        if (selectionOrder.length > 0) {
+            url.searchParams.set("f", selectionOrder.join("-"));
+        } else {
+            url.searchParams.delete("f");
+        }
+        url.searchParams.delete("orms");
+        history.replaceState({}, "", url.toString());
+        localStorage.setItem(
+            "orm-party-selected",
+            JSON.stringify(selectionOrder),
+        );
+        localStorage.setItem(
+            "orm-party-langs",
+            JSON.stringify([...getActiveLangs()]),
+        );
+    }
+
+    function toggleOrm(ormId: string) {
+        const idx = selectionOrder.indexOf(ormId);
+        if (idx >= 0) {
+            selectionOrder.splice(idx, 1);
+        } else {
+            selectionOrder.push(ormId);
+        }
+        applyState();
+    }
+
+    function toggleLang(lang: string) {
+        const btn = document.querySelector<HTMLButtonElement>(
+            `.lang-filter[data-lang="${lang}"]`,
+        );
+        if (!btn) return;
+        const isActive = btn.classList.contains("border-blue-500");
+        btn.classList.toggle("border-blue-500", !isActive);
+        btn.classList.toggle("text-white", !isActive);
+        btn.classList.toggle("border-gray-700", isActive);
+        btn.classList.toggle("text-gray-500", isActive);
+        btn.classList.toggle("opacity-60", isActive);
+        applyState();
+    }
+
+    function init() {
+        // Capture original DOM order
+        originalOrder = Array.from(
+            document.querySelectorAll<HTMLButtonElement>(".orm-toggle"),
+        ).map((btn) => btn.dataset.ormId!);
+
+        // Restore lang filters
+        const storedLangs = localStorage.getItem("orm-party-langs");
+        if (storedLangs) {
+            try {
+                const langs = new Set(JSON.parse(storedLangs) as string[]);
+                document
+                    .querySelectorAll<HTMLButtonElement>(".lang-filter")
+                    .forEach((btn) => {
+                        const lang = btn.dataset.lang!;
+                        const isActive = langs.has(lang);
+                        btn.classList.toggle("border-blue-500", isActive);
+                        btn.classList.toggle("text-white", isActive);
+                        btn.classList.toggle("border-gray-700", !isActive);
+                        btn.classList.toggle("text-gray-500", !isActive);
+                        btn.classList.toggle("opacity-60", !isActive);
+                    });
+            } catch {}
+        }
+
+        // Restore ORM selection order
+        const url = new URL(window.location.href);
+        const fromUrl =
+            url.searchParams.get("f") || url.searchParams.get("orms");
+        const fromStorage = localStorage.getItem("orm-party-selected");
+        if (fromUrl) {
+            selectionOrder = fromUrl
+                .split(/[-,]/)
+                .filter((id) => originalOrder.includes(id));
+        } else if (fromStorage) {
+            try {
+                const arr = JSON.parse(fromStorage) as string[];
+                selectionOrder = arr.filter((id) => originalOrder.includes(id));
+            } catch {}
+        } else {
+            selectionOrder = [];
+        }
+
+        applyState();
+
+        // Re-scroll to hash anchor after applyState toggles section visibility
+        const hash = window.location.hash.slice(1);
+        if (hash) {
+            const section = document.getElementById(hash);
+            if (section) {
+                section.scrollIntoView();
+                const h2 = section.querySelector("h2");
+                const target = h2 || section;
+                target.classList.remove("flash-highlight");
+                void target.offsetWidth;
+                target.classList.add("flash-highlight");
+            }
+        }
+    }
+
+    function setup() {
+        document
+            .querySelectorAll<HTMLButtonElement>(".orm-toggle")
+            .forEach((btn) => {
+                btn.addEventListener("click", () =>
+                    toggleOrm(btn.dataset.ormId!),
+                );
+            });
+        document
+            .querySelectorAll<HTMLButtonElement>(".lang-filter")
+            .forEach((btn) => {
+                btn.addEventListener("click", () =>
+                    toggleLang(btn.dataset.lang!),
+                );
+            });
+        init();
+    }
+
+    setup();
+    document.addEventListener("astro:after-swap", setup);
+</script>

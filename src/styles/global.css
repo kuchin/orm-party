@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@keyframes flash-fade {
+  0% { background-color: rgba(59, 130, 246, 0.3); }
+  100% { background-color: transparent; }
+}
+
+.flash-highlight {
+  animation: flash-fade 1.5s ease-out;
+  border-radius: 0.25rem;
+}

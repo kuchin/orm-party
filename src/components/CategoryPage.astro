@@ -1,0 +1,106 @@
+---
+import type { Category } from "../data/categories";
+import { orms } from "../data/orms";
+import ScenarioSection from "./ScenarioSection.astro";
+import OrmSelector from "./OrmSelector.astro";
+
+interface SnippetFile {
+  filename: string;
+  language: string;
+  code: string;
+}
+
+interface Props {
+  category: Category;
+  snippets: Array<{
+    data: {
+      categorySlug: string;
+      scenarioSlug: string;
+      ormId: string;
+      files: SnippetFile[];
+    };
+  }>;
+  prevCategory?: Category;
+  nextCategory: Category;
+}
+
+const { category, snippets, prevCategory, nextCategory } = Astro.props;
+
+const grouped: Record<string, Record<string, SnippetFile[]>> = {};
+for (const s of snippets) {
+  const key = s.data.scenarioSlug;
+  if (!grouped[key]) grouped[key] = {};
+  grouped[key][s.data.ormId] = s.data.files;
+}
+---
+
+<OrmSelector orms={orms} />
+<div class="p-6 lg:p-8 max-w-6xl mx-auto">
+  <div id="category-header" class="flex items-center justify-between mb-8">
+    <h1 class="text-2xl font-bold">{category.title}</h1>
+    <div class="flex items-center gap-2">
+      {prevCategory && (
+        <a
+          href={`/${prevCategory.slug}`}
+          class="flex items-center justify-center w-8 h-8 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+          aria-label={`Previous: ${prevCategory.title}`}
+          title={prevCategory.title}
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </a>
+      )}
+      <a
+        href={`/${nextCategory.slug}`}
+        class="flex items-center justify-center w-8 h-8 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+        aria-label={`Next: ${nextCategory.title}`}
+        title={nextCategory.title}
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    </div>
+  </div>
+  <div id="empty-state" class="flex flex-col items-center justify-center py-24 text-gray-500">
+    <svg class="w-12 h-12 mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+    </svg>
+    <p class="text-lg font-medium">Select ORMs to compare</p>
+    <p class="text-sm mt-1">Pick one or more ORMs from the bar above</p>
+  </div>
+  {
+    category.scenarios.map((scenario) => (
+      <ScenarioSection
+        scenario={scenario}
+        snippetsByOrm={grouped[scenario.slug] || {}}
+        orms={orms}
+      />
+    ))
+  }
+  <div id="bottom-nav" class="mt-20 pb-12 flex items-center justify-center gap-2">
+    {prevCategory && (
+      <a
+        href={`/${prevCategory.slug}`}
+        class="flex items-center justify-center w-8 h-8 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+        aria-label={`Previous: ${prevCategory.title}`}
+        title={prevCategory.title}
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </a>
+    )}
+    <a
+      href={`/${nextCategory.slug}`}
+      class="flex items-center justify-center w-8 h-8 rounded border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+      aria-label={`Next: ${nextCategory.title}`}
+      title={nextCategory.title}
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+    </a>
+  </div>
+</div>

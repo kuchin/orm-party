@@ -1,0 +1,37 @@
+---
+import SnippetCard from "./SnippetCard.astro";
+import EmptySnippet from "./EmptySnippet.astro";
+import type { OrmDef } from "../data/orms";
+import type { Scenario } from "../data/categories";
+
+interface SnippetFile {
+  filename: string;
+  language: string;
+  code: string;
+}
+
+interface Props {
+  scenario: Scenario;
+  snippetsByOrm: Record<string, SnippetFile[]>;
+  orms: OrmDef[];
+}
+
+const { scenario, snippetsByOrm, orms } = Astro.props;
+const anchor = scenario.slug.replace(/^\d+-/, "");
+---
+
+<section class="mb-12 scroll-mt-14" id={anchor}>
+  <h2 class="text-lg font-semibold mb-4 text-gray-300">{scenario.title}</h2>
+  <div class="snippet-grid grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
+    {
+      orms.map((orm) => {
+        const files = snippetsByOrm[orm.id];
+        return files ? (
+          <SnippetCard orm={orm} files={files} />
+        ) : (
+          <EmptySnippet orm={orm} />
+        );
+      })
+    }
+  </div>
+</section>

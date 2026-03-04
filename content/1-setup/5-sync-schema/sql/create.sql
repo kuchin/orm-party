@@ -1,0 +1,2 @@
+-- No sync tool — you run CREATE TABLE directly
+-- or use a migration tool like Flyway / Liquibase

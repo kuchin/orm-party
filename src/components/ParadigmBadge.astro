@@ -1,0 +1,18 @@
+---
+interface Props {
+  paradigm: string;
+}
+
+const { paradigm } = Astro.props;
+
+const labels: Record<string, string> = {
+  "active-record": "Active Record",
+  "data-mapper": "Data Mapper",
+  "schema-first": "Schema-first",
+  "query-builder": "Query Builder",
+};
+---
+
+<span class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">
+  {labels[paradigm] || paradigm}
+</span>

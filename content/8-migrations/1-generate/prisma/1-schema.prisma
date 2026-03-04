@@ -1,0 +1,8 @@
+// Add a new field to the schema
+
+model User {
+  id    Int     @id @default(autoincrement())
+  name  String
+  email String  @unique
+  age   Int?    // ← new
+}

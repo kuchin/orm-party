@@ -1,0 +1,1 @@
+npx typeorm schema:sync
