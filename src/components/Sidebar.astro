@@ -42,7 +42,7 @@ const { currentSlug } = Astro.props;
                   return (
                     <li>
                       <a
-                        href={`/${cat.slug}#${anchor}`}
+                        href={`${categoryUrl(cat.slug)}#${anchor}`}
                         class="block py-1 pl-6 pr-3 text-xs text-gray-500 hover:text-gray-300 rounded sidebar-scenario-link"
                         data-scenario={anchor}
                       >
@@ -61,12 +61,32 @@ const { currentSlug } = Astro.props;
 </aside>
 
 <script>
+  function syncSidebarLinks() {
+    document.querySelectorAll<HTMLAnchorElement>("#sidebar a").forEach((link) => {
+      const baseHref = link.dataset.baseHref || link.getAttribute("href") || "";
+      if (!link.dataset.baseHref) link.dataset.baseHref = baseHref;
+      link.setAttribute("href", withCurrentFilter(baseHref));
+    });
+  }
+
+  function withCurrentFilter(rawHref: string): string {
+    if (!rawHref.startsWith("/")) return rawHref;
+    const current = new URL(window.location.href);
+    const target = new URL(rawHref, window.location.origin);
+    const f = current.searchParams.get("f");
+    if (f) target.searchParams.set("f", f);
+    else target.searchParams.delete("f");
+    return `${target.pathname}${target.search}${target.hash}`;
+  }
+
   function setupSidebar() {
     const toggle = document.getElementById("sidebar-toggle");
     const sidebar = document.getElementById("sidebar");
     const overlay = document.getElementById("sidebar-overlay");
 
     if (!toggle || !sidebar || !overlay) return;
+
+    syncSidebarLinks();
 
     function openSidebar() {
       sidebar!.classList.remove("-translate-x-full");
@@ -88,9 +108,14 @@ const { currentSlug } = Astro.props;
 
     overlay.addEventListener("click", closeSidebar);
 
-    // Close sidebar when clicking a link (mobile)
-    sidebar.querySelectorAll("a").forEach((link) => {
-      link.addEventListener("click", closeSidebar);
+    // Preserve ORM filter in sidebar navigation links
+    // and close sidebar on mobile after click.
+    sidebar.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => {
+      link.addEventListener("click", () => {
+        const baseHref = link.dataset.baseHref || link.getAttribute("href") || "";
+        link.setAttribute("href", withCurrentFilter(baseHref));
+        closeSidebar();
+      });
     });
 
     // Flash-highlight section when clicking a scenario link
@@ -156,6 +181,13 @@ const { currentSlug } = Astro.props;
     document.querySelectorAll<HTMLElement>("section[id]").forEach((section) => {
       sectionObserver!.observe(section);
     });
+  }
+
+  const sidebarEvents = window as Window & { __sidebarFilterEventsBound?: boolean };
+  if (!sidebarEvents.__sidebarFilterEventsBound) {
+    document.addEventListener("orm-filter-changed", syncSidebarLinks);
+    window.addEventListener("popstate", syncSidebarLinks);
+    sidebarEvents.__sidebarFilterEventsBound = true;
   }
 
   setupSidebar();

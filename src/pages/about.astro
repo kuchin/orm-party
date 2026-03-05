@@ -1,13 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { orms } from "../data/orms";
-import { categories } from "../data/categories";
 
-const totalScenarios = categories.reduce(
-    (sum, c) => sum + c.scenarios.length,
-    0,
-);
-const ormList = orms.filter((o) => o.id !== "sql");
+const pythonOrms = orms.filter((o) => o.language === "python");
+const typescriptOrms = orms.filter((o) => o.language === "typescript");
 ---
 
 <Layout>
@@ -27,33 +23,52 @@ const ormList = orms.filter((o) => o.id !== "sql");
                 <li class="flex items-center gap-2">
                     <img src="/orm/sql.svg" alt="" class="w-4 h-4" />
                     <span class="text-white">Raw SQL</span>
-                    <!-- <span class="text-gray-500">— PostgreSQL</span> -->
+                    <span class="text-gray-500">— PostgreSQL</span>
                 </li>
-                {
-                    ormList.map((orm) => (
-                        <li class="flex items-center gap-2">
-                            <img
-                                src={`/orm/${orm.id}.svg`}
-                                alt=""
-                                class="w-4 h-4"
-                            />
-                            <a
-                                href={orm.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="text-white hover:text-blue-400"
-                            >
-                                {orm.name}
-                            </a>
-                            <!-- <span class="text-gray-500">
-                                —{" "}
-                                {orm.language === "python"
-                                    ? "Python"
-                                    : "TypeScript"}
-                            </span> -->
-                        </li>
-                    ))
-                }
+                <li>
+                    <span class="text-gray-400">Python:</span>{" "}
+                    <span class="inline-flex flex-wrap items-center gap-3 align-middle">
+                        {
+                            pythonOrms.map((orm) => (
+                                <a
+                                    href={orm.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1.5 text-white hover:text-blue-400"
+                                >
+                                    <img
+                                        src={`/orm/${orm.id}.svg`}
+                                        alt=""
+                                        class="w-3.5 h-3.5"
+                                    />
+                                    <span>{orm.name}</span>
+                                </a>
+                            ))
+                        }
+                    </span>
+                </li>
+                <li>
+                    <span class="text-gray-400">TypeScript:</span>{" "}
+                    <span class="inline-flex flex-wrap items-center gap-3 align-middle">
+                        {
+                            typescriptOrms.map((orm) => (
+                                <a
+                                    href={orm.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1.5 text-white hover:text-blue-400"
+                                >
+                                    <img
+                                        src={`/orm/${orm.id}.svg`}
+                                        alt=""
+                                        class="w-3.5 h-3.5"
+                                    />
+                                    <span>{orm.name}</span>
+                                </a>
+                            ))
+                        }
+                    </span>
+                </li>
             </ul>
 
             <p>

@@ -5,6 +5,7 @@ const githubUrl = "https://github.com/kuchin/orm-party";
 <header class="border-b border-gray-800">
     <div class="flex items-center justify-between px-4 lg:px-6 py-3">
         <a
+            id="home-link"
             href="/"
             class="flex items-center gap-2 text-lg font-bold hover:text-white"
         >
@@ -50,3 +51,19 @@ const githubUrl = "https://github.com/kuchin/orm-party";
         </div>
     </div>
 </header>
+
+<script>
+    function setupHomeReset() {
+        const homeLink = document.getElementById("home-link") as HTMLAnchorElement | null;
+        if (!homeLink) return;
+        if (homeLink.dataset.resetBound === "1") return;
+        homeLink.dataset.resetBound = "1";
+
+        homeLink.addEventListener("click", () => {
+            localStorage.removeItem("orm-party-selected");
+        });
+    }
+
+    setupHomeReset();
+    document.addEventListener("astro:after-swap", setupHomeReset);
+</script>

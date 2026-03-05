@@ -119,8 +119,23 @@ export const categories: Category[] = [
     ],
   },
   {
+    slug: "admin",
+    contentSlug: "9-admin",
+    title: "Admin",
+    scenarios: [
+      { slug: "0-install", title: "Install" },
+      { slug: "1-register-model", title: "Register Model" },
+      { slug: "2-list-display", title: "List Display" },
+      { slug: "3-search-filters", title: "Search & Filters" },
+      { slug: "4-custom-actions", title: "Custom Actions" },
+      { slug: "5-inline-editing", title: "Inline Editing" },
+      { slug: "6-fieldsets", title: "Fieldsets & Readonly" },
+      { slug: "7-permissions", title: "Permissions" },
+    ],
+  },
+  {
     slug: "raw-queries",
-    contentSlug: "9-raw-queries",
+    contentSlug: "10-raw-queries",
     title: "Raw Queries",
     scenarios: [
       { slug: "1-execute-raw", title: "Execute Raw SQL" },
@@ -130,7 +145,7 @@ export const categories: Category[] = [
   },
   {
     slug: "advanced",
-    contentSlug: "10-advanced",
+    contentSlug: "11-advanced",
     title: "Advanced",
     scenarios: [
       { slug: "1-window-functions", title: "Window Functions" },
@@ -138,6 +153,7 @@ export const categories: Category[] = [
       { slug: "3-json-fields", title: "JSON Field Queries" },
       { slug: "4-full-text-search", title: "Full-Text Search" },
       { slug: "5-database-views", title: "Database Views" },
+      { slug: "6-introspect", title: "Introspect (DB → Models)" },
     ],
   },
 ];

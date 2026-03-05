@@ -32,7 +32,7 @@ const ormLangMap = Object.fromEntries(orms.map((o) => [o.id, o.language]));
                 d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
     </button>
-    <div class="flex items-center gap-1.5 shrink-0">
+    <div class="hidden md:flex items-center gap-1.5 shrink-0">
         <button
             class="lang-filter flex items-center rounded border p-1.5 bg-gray-900 hover:bg-gray-800 transition-all cursor-pointer border-blue-500 text-white"
             data-lang="python"
@@ -73,6 +73,9 @@ const ormLangMap = Object.fromEntries(orms.map((o) => [o.id, o.language]));
     let selectionOrder: string[] = [];
     // Original DOM order of ORM IDs (set once on setup)
     let originalOrder: string[] = [];
+    // Runtime-only language filter state:
+    // persists across client-side navigation, resets on full page load.
+    type OrmSelectorRuntimeState = Window & { __ormPartyLangs?: string[] };
 
     function getOrmLangMap(): Record<string, string> {
         const el = document.getElementById("orm-selector");
@@ -181,14 +184,15 @@ const ormLangMap = Object.fromEntries(orms.map((o) => [o.id, o.language]));
                 section.style.display = hasVisible ? "" : "none";
             });
 
-        const noSelection = activeOrms.size === 0;
+        const hasSelection = selectionOrder.length > 0;
+        const noVisibleSelection = activeOrms.size === 0;
         const emptyState = document.getElementById("empty-state");
-        if (emptyState) emptyState.style.display = noSelection ? "" : "none";
+        if (emptyState) emptyState.style.display = noVisibleSelection ? "" : "none";
         const categoryHeader = document.getElementById("category-header");
         if (categoryHeader)
-            categoryHeader.style.display = noSelection ? "none" : "";
+            categoryHeader.style.display = hasSelection ? "" : "none";
         const bottomNav = document.getElementById("bottom-nav");
-        if (bottomNav) bottomNav.style.display = noSelection ? "none" : "";
+        if (bottomNav) bottomNav.style.display = hasSelection ? "" : "none";
 
         // Adjust sidebar breakpoint: show earlier when fewer ORMs selected
         // Classes: xl:sticky xl:translate-x-0 xl:hidden (ensure Tailwind compiles them)
@@ -196,7 +200,7 @@ const ormLangMap = Object.fromEntries(orms.map((o) => [o.id, o.language]));
         const sidebar = document.getElementById("sidebar");
         const sidebarToggle = document.getElementById("sidebar-toggle");
         if (sidebar && sidebarToggle) {
-            if (noSelection) {
+            if (!hasSelection) {
                 sidebar.style.display = "none";
                 sidebarToggle.style.display = "none";
             } else {
@@ -232,14 +236,12 @@ const ormLangMap = Object.fromEntries(orms.map((o) => [o.id, o.language]));
         }
         url.searchParams.delete("orms");
         history.replaceState({}, "", url.toString());
+        document.dispatchEvent(new CustomEvent("orm-filter-changed"));
         localStorage.setItem(
             "orm-party-selected",
             JSON.stringify(selectionOrder),
         );
-        localStorage.setItem(
-            "orm-party-langs",
-            JSON.stringify([...getActiveLangs()]),
-        );
+        (window as OrmSelectorRuntimeState).__ormPartyLangs = [...getActiveLangs()];
     }
 
     function toggleOrm(ormId: string) {
@@ -272,23 +274,27 @@ const ormLangMap = Object.fromEntries(orms.map((o) => [o.id, o.language]));
             document.querySelectorAll<HTMLButtonElement>(".orm-toggle"),
         ).map((btn) => btn.dataset.ormId!);
 
-        // Restore lang filters
-        const storedLangs = localStorage.getItem("orm-party-langs");
-        if (storedLangs) {
-            try {
-                const langs = new Set(JSON.parse(storedLangs) as string[]);
-                document
-                    .querySelectorAll<HTMLButtonElement>(".lang-filter")
-                    .forEach((btn) => {
-                        const lang = btn.dataset.lang!;
-                        const isActive = langs.has(lang);
-                        btn.classList.toggle("border-blue-500", isActive);
-                        btn.classList.toggle("text-white", isActive);
-                        btn.classList.toggle("border-gray-700", !isActive);
-                        btn.classList.toggle("text-gray-500", !isActive);
-                        btn.classList.toggle("opacity-60", !isActive);
-                    });
-            } catch {}
+        // Reset language filters when landing on homepage.
+        if (window.location.pathname === "/") {
+            delete (window as OrmSelectorRuntimeState).__ormPartyLangs;
+        }
+
+        // Restore lang filters only during client-side navigation.
+        // On full reload, defaults from markup are used (both enabled).
+        const runtimeLangs = (window as OrmSelectorRuntimeState).__ormPartyLangs;
+        if (runtimeLangs !== undefined) {
+            const langs = new Set(runtimeLangs);
+            document
+                .querySelectorAll<HTMLButtonElement>(".lang-filter")
+                .forEach((btn) => {
+                    const lang = btn.dataset.lang!;
+                    const isActive = langs.has(lang);
+                    btn.classList.toggle("border-blue-500", isActive);
+                    btn.classList.toggle("text-white", isActive);
+                    btn.classList.toggle("border-gray-700", !isActive);
+                    btn.classList.toggle("text-gray-500", !isActive);
+                    btn.classList.toggle("opacity-60", !isActive);
+                });
         }
 
         // Restore ORM selection order
@@ -327,6 +333,8 @@ const ormLangMap = Object.fromEntries(orms.map((o) => [o.id, o.language]));
     }
 
     function setup() {
+        if (!document.getElementById("orm-selector")) return;
+
         document
             .querySelectorAll<HTMLButtonElement>(".orm-toggle")
             .forEach((btn) => {
