@@ -10,6 +10,7 @@ interface Props {
 
 const { currentCategory } = Astro.props;
 const showSidebar = !!currentCategory;
+const gaId = import.meta.env.PUBLIC_GA_ID;
 ---
 
 <!doctype html>
@@ -36,6 +37,15 @@ const showSidebar = !!currentCategory;
         />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <title>ORM Party</title>
+        {gaId && (
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+            <script define:vars={{ gaId }}>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', gaId);
+            </script>
+        )}
         <ViewTransitions />
     </head>
     <body class="bg-gray-950 text-gray-100 min-h-screen">
